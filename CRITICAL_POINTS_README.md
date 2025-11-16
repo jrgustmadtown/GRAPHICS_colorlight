@@ -1,5 +1,6 @@
 # Critical Point System Template
 
+test 
 A reusable Three.js system for adding glowing "critical points" to 3D objects. Critical points are fixed-size, glowing circles that appear randomly on object surfaces and pulse with a determined color.
 
 ### 1. Copy Files to Your Project
