@@ -1,4 +1,5 @@
 import * as THREE from './libs/CS559-Three/build/three.module.js';
+import { CriticalPointSystem, CP_COLORS } from './critical-point-system.js';
 
 // Scene setup
 let scene, camera, renderer, controls;
@@ -6,9 +7,10 @@ let meshes = [];
 let animationId;
 
 // Animation parameters
-let rotationSpeed = 1;
 let lightIntensity = 1;
-let colorHue = 120;
+
+// Critical Point System
+let criticalPointSystem;
 
 // Initialize the scene
 function init() {
@@ -33,6 +35,9 @@ function init() {
 
     // Create lights
     createLights();
+
+    // Initialize Critical Point System
+    criticalPointSystem = new CriticalPointSystem(scene);
 
     // Create objects
     createObjects();
@@ -91,12 +96,12 @@ function addMouseControls() {
 
 // Create lighting
 function createLights() {
-    // Ambient light
-    const ambientLight = new THREE.AmbientLight(0x404040, 0.3);
+    // Very dim ambient light
+    const ambientLight = new THREE.AmbientLight(0x404040, 0.05);
     scene.add(ambientLight);
 
-    // Directional light
-    const directionalLight = new THREE.DirectionalLight(0xffffff, lightIntensity);
+    // Much dimmer directional light
+    const directionalLight = new THREE.DirectionalLight(0xffffff, 0.1);
     directionalLight.position.set(5, 5, 5);
     directionalLight.castShadow = true;
     directionalLight.shadow.mapSize.width = 2048;
@@ -109,13 +114,101 @@ function createLights() {
 
 // Create 3D objects
 function createObjects() {
-    // Add a simple plane
-    const planeGeometry = new THREE.PlaneGeometry(10, 10);
-    const planeMaterial = new THREE.MeshLambertMaterial({ color: 0x666666 });
-    const plane = new THREE.Mesh(planeGeometry, planeMaterial);
-    plane.rotation.x = -Math.PI / 2; // Rotate to lay flat
-    plane.receiveShadow = true;
-    scene.add(plane);
+    // Create an enclosed room with walls
+    const roomSize = 100;
+    const wallMaterial = new THREE.MeshLambertMaterial({ color: 0x222222, side: THREE.DoubleSide });
+
+    // Floor
+    const floor = new THREE.Mesh(new THREE.PlaneGeometry(roomSize, roomSize), wallMaterial);
+    floor.rotation.x = -Math.PI / 2;
+    floor.receiveShadow = true;
+    scene.add(floor);
+
+    // Ceiling
+    const ceiling = new THREE.Mesh(new THREE.PlaneGeometry(roomSize, roomSize), wallMaterial);
+    ceiling.rotation.x = Math.PI / 2;
+    ceiling.position.y = 6;
+    scene.add(ceiling);
+
+    // Back wall
+    const backWall = new THREE.Mesh(new THREE.PlaneGeometry(roomSize, 6), wallMaterial);
+    backWall.position.set(0, 3, -roomSize/2);
+    scene.add(backWall);
+
+    // Front wall 
+    const frontWall = new THREE.Mesh(new THREE.PlaneGeometry(roomSize, 6), wallMaterial);
+    frontWall.position.set(0, 3, roomSize/2);
+    scene.add(frontWall);
+
+    // Left wall
+    const leftWall = new THREE.Mesh(new THREE.PlaneGeometry(roomSize, 6), wallMaterial);
+    leftWall.rotation.y = Math.PI / 2;
+    leftWall.position.set(-roomSize/2, 3, 0);
+    scene.add(leftWall);
+
+    // Right wall
+    const rightWall = new THREE.Mesh(new THREE.PlaneGeometry(roomSize, 6), wallMaterial);
+    rightWall.rotation.y = -Math.PI / 2;
+    rightWall.position.set(roomSize/2, 3, 0);
+    scene.add(rightWall);
+
+    // EXAMPLE: Add test objects with critical points
+    const testCube = new THREE.Mesh(
+        new THREE.BoxGeometry(2, 2, 2),
+        new THREE.MeshLambertMaterial({ color: 0x4488ff })
+    );
+    testCube.position.set(3, 1, 3);
+    testCube.castShadow = true;
+    scene.add(testCube);
+    meshes.push(testCube);
+
+    // Add critical points to the test cube
+    criticalPointSystem.addCriticalPoints(testCube, 4, CP_COLORS.WHITE);
+
+     // EXAMPLE: Add test objects with critical points
+    const testCube2 = new THREE.Mesh(
+        new THREE.BoxGeometry(2, 2, 2),
+        new THREE.MeshLambertMaterial({ color: 0x4488ff })
+    );
+    testCube2.position.set(0, 1, 0);
+    testCube2.castShadow = true;
+    scene.add(testCube2);
+    meshes.push(testCube2);
+
+    // Add critical points to the test cube
+    criticalPointSystem.addCriticalPoints(testCube2, 4, CP_COLORS.WHITE);
+
+    // EXAMPLE: Add sphere with different colored CPs
+    const testSphere = new THREE.Mesh(
+        new THREE.SphereGeometry(1, 32, 32),
+        new THREE.MeshLambertMaterial({ color: 0x44ff88 })
+    );
+    testSphere.position.set(-3, 1, -3);
+    testSphere.castShadow = true;
+    scene.add(testSphere);
+    meshes.push(testSphere);
+
+    // Add critical points to the sphere
+    criticalPointSystem.addCriticalPoints(testSphere, 3, CP_COLORS.WHITE);
+
+    // EXAMPLE: Add extremely bright laser-like spotlight beams that can destroy CPs
+    const redLight = new THREE.SpotLight(0xff0000, 100, 15, Math.PI / 12, 0.1);
+    redLight.position.set(-1, 4, 0);
+    redLight.target.position.set(0, 1, 0);
+    redLight.castShadow = true;
+    scene.add(redLight);
+    scene.add(redLight.target);
+    criticalPointSystem.addColoredLight(redLight, 0xff0000, 1.5);
+
+    const blueLight = new THREE.SpotLight(0x0099ff, 100, 15, Math.PI / 12, 0.1);
+    blueLight.position.set(1, 4, 0);
+    blueLight.target.position.set(0, 1, 0);
+    blueLight.castShadow = true;
+    scene.add(blueLight);
+    scene.add(blueLight.target);
+    criticalPointSystem.addColoredLight(blueLight, 0x0099ff, 1.5);
+
+    // Note: Removed SpotLightHelper to prevent visual guides from rendering through objects
 }
 
 
@@ -124,8 +217,13 @@ function createObjects() {
 function animate() {
     animationId = requestAnimationFrame(animate);
 
+    // Update critical points (pulsing glow effect and light interactions)
+    if (criticalPointSystem) {
+        criticalPointSystem.updateCriticalPoints();
+    }
+
     // Animation code for your objects goes here
-    // const time = Date.now() * 0.001 * rotationSpeed;
+    // const time = Date.now() * 0.001;
 
     // Render the scene
     renderer.render(scene, camera);
