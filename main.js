@@ -112,20 +112,16 @@ function createLights() {
     window.directionalLight = directionalLight;
 }
 
-// Create a wireframe cone helper to visualize spotlight dimensions
-function createLightConeHelper(spotlight, color) {
-    const distance = spotlight.distance || 15;
-    const angle = spotlight.angle;
-    const radius = Math.tan(angle) * distance;
-    
-    // Create a group to hold all helper elements
-    const helperGroup = new THREE.Group();
+// Create simple light helper for spotlights
+function createSimpleLightHelper(spotlight, color) {
+    // Create a group to hold light elements
+    const lightGroup = new THREE.Group();
     
     // Get light and target positions
     const lightPos = spotlight.position.clone();
     const targetPos = spotlight.target.position.clone();
     
-    // Add a direct line from light to target for clarity
+    // Add a direct line from light to target
     const lineGeometry = new THREE.BufferGeometry().setFromPoints([
         lightPos,
         targetPos
@@ -136,23 +132,64 @@ function createLightConeHelper(spotlight, color) {
         opacity: 0.7
     });
     const line = new THREE.Line(lineGeometry, lineMaterial);
-    helperGroup.add(line);
+    lightGroup.add(line);
     
-    // Add a small sphere at the light position
-    const lightMarkerGeometry = new THREE.SphereGeometry(0.1, 8, 8);
+    // Add a small bright sphere at the light source
+    const lightMarkerGeometry = new THREE.SphereGeometry(0.15, 8, 8);
     const lightMarkerMaterial = new THREE.MeshBasicMaterial({
         color: color,
         transparent: true,
-        opacity: 0.8
+        opacity: 1.0
     });
     const lightMarker = new THREE.Mesh(lightMarkerGeometry, lightMarkerMaterial);
     lightMarker.position.copy(lightPos);
-    helperGroup.add(lightMarker);
+    lightGroup.add(lightMarker);
     
-    // Store reference to the spotlight for potential updates
-    helperGroup.userData.spotlight = spotlight;
+    // Store references
+    lightGroup.userData = {
+        spotlight: spotlight,
+        line: line,
+        lightMarker: lightMarker,
+        color: color
+    };
     
-    return helperGroup;
+    return lightGroup;
+}
+
+// Update simple light helper to match spotlight position and direction
+function updateSimpleLightHelper(lightGroup) {
+    const userData = lightGroup.userData;
+    if (!userData.spotlight || !userData.line || !userData.lightMarker || !userData.lightCone) return;
+    
+    const spotlight = userData.spotlight;
+    const line = userData.line;
+    const lightMarker = userData.lightMarker;
+    const lightCone = userData.lightCone;
+    const distance = userData.distance;
+    
+    // Get current spotlight position and target
+    const lightPos = spotlight.position.clone();
+    const targetPos = spotlight.target.position.clone();
+    const direction = new THREE.Vector3().subVectors(targetPos, lightPos).normalize();
+    
+    // Update line geometry
+    const positions = line.geometry.attributes.position.array;
+    positions[0] = lightPos.x;
+    positions[1] = lightPos.y;
+    positions[2] = lightPos.z;
+    positions[3] = targetPos.x;
+    positions[4] = targetPos.y;
+    positions[5] = targetPos.z;
+    line.geometry.attributes.position.needsUpdate = true;
+    
+    // Update light marker position
+    lightMarker.position.copy(lightPos);
+    
+    // Update light cone position and orientation
+    lightCone.position.copy(lightPos);
+    lightCone.position.add(direction.clone().multiplyScalar(distance / 2));
+    lightCone.lookAt(targetPos);
+    lightCone.rotateX(-Math.PI / 2);
 }
 
 // Create 3D objects
@@ -243,8 +280,8 @@ function createObjects() {
     scene.add(redLight.target);
     criticalPointSystem.addColoredLight(redLight, 0xff0000, 3.0); // Increased range
 
-    // Add visual wireframe cone for red light
-    const redLightHelper = createLightConeHelper(redLight, 0xff0000);
+    // Add simple visual helper for red light
+    const redLightHelper = createSimpleLightHelper(redLight, 0xff0000);
     scene.add(redLightHelper);
 
     const blueLight = new THREE.SpotLight(0x0099ff, 100, 15, Math.PI / 12, 0.1);
@@ -255,8 +292,8 @@ function createObjects() {
     scene.add(blueLight.target);
     criticalPointSystem.addColoredLight(blueLight, 0x0099ff, 3.0); // Increased range
 
-    // Add visual wireframe cone for blue light
-    const blueLightHelper = createLightConeHelper(blueLight, 0x0099ff);
+    // Add simple visual helper for blue light
+    const blueLightHelper = createSimpleLightHelper(blueLight, 0x0099ff);
     scene.add(blueLightHelper);
 
     // Store light helpers for potential updates
@@ -270,13 +307,27 @@ function createObjects() {
 function animate() {
     animationId = requestAnimationFrame(animate);
 
+    const time = Date.now() * 0.001;
+
     // Update critical points (pulsing glow effect and light interactions)
     if (criticalPointSystem) {
         criticalPointSystem.updateCriticalPoints();
     }
 
-    // Animation code for your objects goes here
-    // const time = Date.now() * 0.001;
+    // Update simple light helpers to stay synced with spotlights
+    if (window.redLightHelper) {
+        updateSimpleLightHelper(window.redLightHelper);
+    }
+    if (window.blueLightHelper) {
+        updateSimpleLightHelper(window.blueLightHelper);
+    }
+
+    // Optional: Add some movement to the lights for dynamic effect
+    // Uncomment these lines if you want the lights to move slightly
+    // const redLight = scene.getObjectByName('redLight');
+    // const blueLight = scene.getObjectByName('blueLight');
+    // if (redLight) redLight.position.x = -1 + Math.sin(time * 0.5) * 0.3;
+    // if (blueLight) blueLight.position.x = 1 + Math.cos(time * 0.5) * 0.3;
 
     // Render the scene
     renderer.render(scene, camera);
