@@ -169,7 +169,7 @@ function updateSimpleLightHelper(lightGroup) {
     const lightPos = spotlight.position.clone();
     const targetPos = spotlight.target.position.clone();
     
-    // Update line geometry
+    // Update center line geometry
     const positions = line.geometry.attributes.position.array;
     positions[0] = lightPos.x;
     positions[1] = lightPos.y;
