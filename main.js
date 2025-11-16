@@ -159,18 +159,15 @@ function createSimpleLightHelper(spotlight, color) {
 // Update simple light helper to match spotlight position and direction
 function updateSimpleLightHelper(lightGroup) {
     const userData = lightGroup.userData;
-    if (!userData.spotlight || !userData.line || !userData.lightMarker || !userData.lightCone) return;
+    if (!userData.spotlight || !userData.line || !userData.lightMarker) return;
     
     const spotlight = userData.spotlight;
     const line = userData.line;
     const lightMarker = userData.lightMarker;
-    const lightCone = userData.lightCone;
-    const distance = userData.distance;
     
     // Get current spotlight position and target
     const lightPos = spotlight.position.clone();
     const targetPos = spotlight.target.position.clone();
-    const direction = new THREE.Vector3().subVectors(targetPos, lightPos).normalize();
     
     // Update line geometry
     const positions = line.geometry.attributes.position.array;
@@ -184,12 +181,6 @@ function updateSimpleLightHelper(lightGroup) {
     
     // Update light marker position
     lightMarker.position.copy(lightPos);
-    
-    // Update light cone position and orientation
-    lightCone.position.copy(lightPos);
-    lightCone.position.add(direction.clone().multiplyScalar(distance / 2));
-    lightCone.lookAt(targetPos);
-    lightCone.rotateX(-Math.PI / 2);
 }
 
 // Create 3D objects
