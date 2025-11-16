@@ -121,33 +121,9 @@ function createLightConeHelper(spotlight, color) {
     // Create a group to hold all helper elements
     const helperGroup = new THREE.Group();
     
-    // Create cone geometry for the light visualization
-    const coneGeometry = new THREE.ConeGeometry(radius, distance, 8, 1, true);
-    const coneMaterial = new THREE.MeshBasicMaterial({
-        color: color,
-        wireframe: true,
-        transparent: true,
-        opacity: 0.3
-    });
-    
-    const cone = new THREE.Mesh(coneGeometry, coneMaterial);
-    
-    // Position cone at the tip (light source), pointing toward target
+    // Get light and target positions
     const lightPos = spotlight.position.clone();
     const targetPos = spotlight.target.position.clone();
-    const direction = new THREE.Vector3().subVectors(targetPos, lightPos).normalize();
-    
-    // Position the cone so its tip is at the light source
-    cone.position.copy(lightPos);
-    
-    // Move cone forward by half its height so the tip is at the light position
-    cone.position.add(direction.clone().multiplyScalar(distance / 2));
-    
-    // Point the cone toward the target
-    cone.lookAt(targetPos);
-    
-    // Add the cone to the group
-    helperGroup.add(cone);
     
     // Add a direct line from light to target for clarity
     const lineGeometry = new THREE.BufferGeometry().setFromPoints([
