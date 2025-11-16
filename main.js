@@ -112,6 +112,73 @@ function createLights() {
     window.directionalLight = directionalLight;
 }
 
+// Create a wireframe cone helper to visualize spotlight dimensions
+function createLightConeHelper(spotlight, color) {
+    const distance = spotlight.distance || 15;
+    const angle = spotlight.angle;
+    const radius = Math.tan(angle) * distance;
+    
+    // Create a group to hold all helper elements
+    const helperGroup = new THREE.Group();
+    
+    // Create cone geometry for the light visualization
+    const coneGeometry = new THREE.ConeGeometry(radius, distance, 8, 1, true);
+    const coneMaterial = new THREE.MeshBasicMaterial({
+        color: color,
+        wireframe: true,
+        transparent: true,
+        opacity: 0.3
+    });
+    
+    const cone = new THREE.Mesh(coneGeometry, coneMaterial);
+    
+    // Position cone at the tip (light source), pointing toward target
+    const lightPos = spotlight.position.clone();
+    const targetPos = spotlight.target.position.clone();
+    const direction = new THREE.Vector3().subVectors(targetPos, lightPos).normalize();
+    
+    // Position the cone so its tip is at the light source
+    cone.position.copy(lightPos);
+    
+    // Move cone forward by half its height so the tip is at the light position
+    cone.position.add(direction.clone().multiplyScalar(distance / 2));
+    
+    // Point the cone toward the target
+    cone.lookAt(targetPos);
+    
+    // Add the cone to the group
+    helperGroup.add(cone);
+    
+    // Add a direct line from light to target for clarity
+    const lineGeometry = new THREE.BufferGeometry().setFromPoints([
+        lightPos,
+        targetPos
+    ]);
+    const lineMaterial = new THREE.LineBasicMaterial({
+        color: color,
+        transparent: true,
+        opacity: 0.7
+    });
+    const line = new THREE.Line(lineGeometry, lineMaterial);
+    helperGroup.add(line);
+    
+    // Add a small sphere at the light position
+    const lightMarkerGeometry = new THREE.SphereGeometry(0.1, 8, 8);
+    const lightMarkerMaterial = new THREE.MeshBasicMaterial({
+        color: color,
+        transparent: true,
+        opacity: 0.8
+    });
+    const lightMarker = new THREE.Mesh(lightMarkerGeometry, lightMarkerMaterial);
+    lightMarker.position.copy(lightPos);
+    helperGroup.add(lightMarker);
+    
+    // Store reference to the spotlight for potential updates
+    helperGroup.userData.spotlight = spotlight;
+    
+    return helperGroup;
+}
+
 // Create 3D objects
 function createObjects() {
     // Create an enclosed room with walls
@@ -124,32 +191,32 @@ function createObjects() {
     floor.receiveShadow = true;
     scene.add(floor);
 
-    // Ceiling
+    // Ceiling 
     const ceiling = new THREE.Mesh(new THREE.PlaneGeometry(roomSize, roomSize), wallMaterial);
     ceiling.rotation.x = Math.PI / 2;
-    ceiling.position.y = 6;
+    ceiling.position.y = 20;
     scene.add(ceiling);
 
-    // Back wall
-    const backWall = new THREE.Mesh(new THREE.PlaneGeometry(roomSize, 6), wallMaterial);
-    backWall.position.set(0, 3, -roomSize/2);
+    // Back wall (much taller - height 20)
+    const backWall = new THREE.Mesh(new THREE.PlaneGeometry(roomSize, 20), wallMaterial);
+    backWall.position.set(0, 10, -roomSize/2);
     scene.add(backWall);
 
-    // Front wall 
-    const frontWall = new THREE.Mesh(new THREE.PlaneGeometry(roomSize, 6), wallMaterial);
-    frontWall.position.set(0, 3, roomSize/2);
+    // Front wall (much taller - height 20)
+    const frontWall = new THREE.Mesh(new THREE.PlaneGeometry(roomSize, 20), wallMaterial);
+    frontWall.position.set(0, 10, roomSize/2);
     scene.add(frontWall);
 
-    // Left wall
-    const leftWall = new THREE.Mesh(new THREE.PlaneGeometry(roomSize, 6), wallMaterial);
+    // Left wall (much taller - height 20)
+    const leftWall = new THREE.Mesh(new THREE.PlaneGeometry(roomSize, 20), wallMaterial);
     leftWall.rotation.y = Math.PI / 2;
-    leftWall.position.set(-roomSize/2, 3, 0);
+    leftWall.position.set(-roomSize/2, 10, 0);
     scene.add(leftWall);
 
-    // Right wall
-    const rightWall = new THREE.Mesh(new THREE.PlaneGeometry(roomSize, 6), wallMaterial);
+    // Right wall (much taller - height 20)
+    const rightWall = new THREE.Mesh(new THREE.PlaneGeometry(roomSize, 20), wallMaterial);
     rightWall.rotation.y = -Math.PI / 2;
-    rightWall.position.set(roomSize/2, 3, 0);
+    rightWall.position.set(roomSize/2, 10, 0);
     scene.add(rightWall);
 
     // EXAMPLE: Add test objects with critical points
@@ -200,6 +267,10 @@ function createObjects() {
     scene.add(redLight.target);
     criticalPointSystem.addColoredLight(redLight, 0xff0000, 1.5);
 
+    // Add visual wireframe cone for red light
+    const redLightHelper = createLightConeHelper(redLight, 0xff0000);
+    scene.add(redLightHelper);
+
     const blueLight = new THREE.SpotLight(0x0099ff, 100, 15, Math.PI / 12, 0.1);
     blueLight.position.set(1, 4, 0);
     blueLight.target.position.set(0, 1, 0);
@@ -208,7 +279,13 @@ function createObjects() {
     scene.add(blueLight.target);
     criticalPointSystem.addColoredLight(blueLight, 0x0099ff, 1.5);
 
-    // Note: Removed SpotLightHelper to prevent visual guides from rendering through objects
+    // Add visual wireframe cone for blue light
+    const blueLightHelper = createLightConeHelper(blueLight, 0x0099ff);
+    scene.add(blueLightHelper);
+
+    // Store light helpers for potential updates
+    window.redLightHelper = redLightHelper;
+    window.blueLightHelper = blueLightHelper;
 }
 
 
