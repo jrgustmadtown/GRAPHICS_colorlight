@@ -1,0 +1,15 @@
+{
+  "name": "threejs-graphics-project",
+  "version": "1.0.0",
+  "description": "A simple Three.js graphics project with local server",
+  "main": "main.js",
+  "type": "module",
+  "scripts": {
+    "start": "python3 server.py",
+    "serve": "python3 server.py 8080",
+    "dev": "python3 server.py 3000"
+  },
+  "keywords": ["threejs", "graphics", "webgl", "3d"],
+  "author": "",
+  "license": "MIT"
+}
