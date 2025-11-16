@@ -14,8 +14,6 @@ export class CriticalPointSystem {
         this.cpRadius = 0.05; // Fixed size for all CPs
         this.glowIntensity = 0.8;
         this.coloredLights = []; // Track colored lights in the scene
-        this.lightMarks = []; // Track marks left by destroyed CPs
-        this.lightHitDuration = 3000; // 3 seconds in milliseconds
     }
 
     /**
@@ -201,11 +199,6 @@ export class CriticalPointSystem {
                 }
             }
         });
-
-        // Cleanup old light marks periodically
-        if (Math.random() < 0.01) { // 1% chance per frame
-            this.cleanupOldLightMarks();
-        }
     }
 
     /**
@@ -322,39 +315,7 @@ export class CriticalPointSystem {
         this.coloredLights = this.coloredLights.filter(lightData => lightData.light !== light);
     }
 
-    /**
-     * Create a mark where a CP was destroyed
-     * @private
-     */
-    createLightMark(position, lightColor, targetObject) {
-        // Create a small flat disc as the mark
-        const markGeometry = new THREE.CircleGeometry(this.cpRadius * 0.8, 8);
-        const markMaterial = new THREE.MeshBasicMaterial({
-            color: lightColor,
-            transparent: true,
-            opacity: 0.8,
-            side: THREE.DoubleSide
-        });
-        
-        const mark = new THREE.Mesh(markGeometry, markMaterial);
-        mark.position.copy(position);
-        
-        // Orient the mark to face outward from the object surface
-        const direction = new THREE.Vector3().subVectors(position, targetObject.position).normalize();
-        mark.lookAt(position.clone().add(direction));
-        
-        mark.userData = {
-            isLightMark: true,
-            lightColor: lightColor,
-            creationTime: Date.now(),
-            targetObject: targetObject
-        };
-        
-        this.scene.add(mark);
-        this.lightMarks.push(mark);
-        
-        return mark;
-    }
+
 
     /**
      * Check light interactions with critical points and update their state
@@ -372,8 +333,16 @@ export class CriticalPointSystem {
             
             this.coloredLights.forEach(lightData => {
                 const distance = cp.position.distanceTo(lightData.position);
+                // Debug: Log distance checks occasionally
+                if (Math.random() < 0.001) { // 0.1% chance per frame
+                    console.log(`CP at (${cp.position.x.toFixed(2)}, ${cp.position.y.toFixed(2)}, ${cp.position.z.toFixed(2)}) - Light at (${lightData.position.x.toFixed(2)}, ${lightData.position.y.toFixed(2)}, ${lightData.position.z.toFixed(2)}) - Distance: ${distance.toFixed(2)}, Range: ${lightData.range}`);
+                }
                 if (distance <= lightData.range) {
                     beingHitByLight = lightData;
+                    // Debug: Log when light hits CP
+                    if (!cp.userData.isBeingHit) {
+                        console.log(`🔴 Light hitting CP! Distance: ${distance.toFixed(2)}, Range: ${lightData.range}`);
+                    }
                 }
             });
             
@@ -383,32 +352,19 @@ export class CriticalPointSystem {
                     cp.userData.isBeingHit = true;
                     cp.userData.lightHitInfo = {
                         lightColor: beingHitByLight.color,
-                        startTime: currentTime,
-                        duration: this.lightHitDuration
+                        startTime: currentTime
                     };
                     
-                    // Visual feedback - make CP flicker with light color
-                    cp.material.color.setHex(beingHitByLight.color);
-                    if (cp.children[0]) {
-                        cp.children[0].material.color.setHex(beingHitByLight.color);
-                    }
+                    console.log(`🔴 Light hitting CP! Flashing ${beingHitByLight.color.toString(16)}`);
                 }
                 
-                // Check if hit duration is complete
-                const hitTime = currentTime - cp.userData.lightHitInfo.startTime;
-                if (hitTime >= cp.userData.lightHitInfo.duration) {
-                    // Destroy the CP and create a mark
-                    const markPosition = cp.position.clone();
-                    const lightColor = cp.userData.lightHitInfo.lightColor;
-                    
-                    this.createLightMark(markPosition, lightColor, cpData.targetObject);
-                    
-                    // Remove CP from scene and tracking
-                    this.scene.remove(cp);
-                    this.criticalPoints.splice(cpIndex, 1);
+                // Visual feedback - make CP flash with light color
+                cp.material.color.setHex(beingHitByLight.color);
+                if (cp.children[0]) {
+                    cp.children[0].material.color.setHex(beingHitByLight.color);
                 }
             } else if (cp.userData.isBeingHit) {
-                // No longer being hit - reset CP
+                // No longer being hit - reset CP to original color
                 cp.userData.isBeingHit = false;
                 cp.userData.lightHitInfo = null;
                 
@@ -421,22 +377,7 @@ export class CriticalPointSystem {
         });
     }
 
-    /**
-     * Get all light marks (for cleanup or analysis)
-     */
-    getLightMarks() {
-        return this.lightMarks;
-    }
 
-    /**
-     * Remove all light marks from the scene
-     */
-    clearLightMarks() {
-        this.lightMarks.forEach(mark => {
-            this.scene.remove(mark);
-        });
-        this.lightMarks = [];
-    }
 
 }
 

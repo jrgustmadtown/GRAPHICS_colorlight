@@ -241,7 +241,7 @@ function createObjects() {
     redLight.castShadow = true;
     scene.add(redLight);
     scene.add(redLight.target);
-    criticalPointSystem.addColoredLight(redLight, 0xff0000, 1.5);
+    criticalPointSystem.addColoredLight(redLight, 0xff0000, 3.0); // Increased range
 
     // Add visual wireframe cone for red light
     const redLightHelper = createLightConeHelper(redLight, 0xff0000);
@@ -253,7 +253,7 @@ function createObjects() {
     blueLight.castShadow = true;
     scene.add(blueLight);
     scene.add(blueLight.target);
-    criticalPointSystem.addColoredLight(blueLight, 0x0099ff, 1.5);
+    criticalPointSystem.addColoredLight(blueLight, 0x0099ff, 3.0); // Increased range
 
     // Add visual wireframe cone for blue light
     const blueLightHelper = createLightConeHelper(blueLight, 0x0099ff);
